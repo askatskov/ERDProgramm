@@ -1,18 +1,55 @@
+
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
+
 namespace ERDProgramm
 {
     public partial class MainForm : Form
     {
+        private ProductsContext? _productsContext;
         public MainForm()
         {
             InitializeComponent();
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        protected override void OnLoad(EventArgs e)
         {
+            base.OnLoad(e);
+            this._productsContext = new ProductsContext();
+            this._productsContext.Database.EnsureCreated();
+            this._productsContext.Categories.Load();
+            this.categoryBindingSource.DataSource = _productsContext.Categories.Local.ToBindingList();
+        }
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            this._productsContext?.Dispose();
+            this._productsContext = null;
 
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void dataGridViewCategories_SelectionChanged(object sender, EventArgs e)
+        {
+            if (this._productsContext != null)
+            {
+                var category = (Category)this.dataGridViewCategories.CurrentRow.DataBoundItem;
+
+                if (category != null)
+                {
+                    this._productsContext.Entry(category).Collection(e => e.Products).Load();
+                    this.dataGridViewProducts.DataSource = category.Products;
+                }
+            }
+        }
+
+        private void buttonSave_Click(object sender, EventArgs e)
+        {
+            this._productsContext!.SaveChanges();
+            this.dataGridViewCategories.Refresh();
+            this.dataGridViewProducts.Refresh();
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
         {
 
         }
